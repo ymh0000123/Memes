@@ -1,0 +1,1312 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>图片资源管理器</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f3f3f3;
+            color: #333;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .window {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            background: white;
+            border: 1px solid #ccc;
+        }
+
+        /* 标题栏 */
+        .title-bar {
+            background: linear-gradient(to bottom, #e8e8e8, #d0d0d0);
+            border-bottom: 1px solid #b8b8b8;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            padding: 0 10px;
+            position: relative;
+        }
+
+        .title-bar .title {
+            font-size: 13px;
+            font-weight: 400;
+            color: #333;
+        }
+
+        .window-controls {
+            position: absolute;
+            right: 5px;
+            display: flex;
+            gap: 2px;
+        }
+
+        .control-btn {
+            width: 20px;
+            height: 20px;
+            border: 1px solid #999;
+            background: linear-gradient(to bottom, #f8f8f8, #e0e0e0);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+        }
+
+        .control-btn:hover {
+            background: linear-gradient(to bottom, #ffffff, #e8e8e8);
+        }
+
+        /* 工具栏 */
+        .toolbar {
+            background: linear-gradient(to bottom, #f8f8f8, #e8e8e8);
+            border-bottom: 1px solid #c0c0c0;
+            padding: 8px 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .toolbar-btn {
+            padding: 6px 12px;
+            border: 1px solid #999;
+            background: linear-gradient(to bottom, #f8f8f8, #e0e0e0);
+            font-size: 12px;
+            cursor: pointer;
+            border-radius: 2px;
+        }
+
+        .toolbar-btn:hover {
+            background: linear-gradient(to bottom, #ffffff, #e8e8e8);
+        }
+
+        .toolbar-btn.active {
+            background: linear-gradient(to bottom, #d0d0d0, #b8b8b8);
+            border: 1px solid #666;
+        }
+
+        .address-bar {
+            flex: 1;
+            padding: 4px 8px;
+            border: 1px solid #999;
+            border-radius: 2px;
+            background: white;
+            font-size: 12px;
+            margin-left: 10px;
+        }
+
+        .search-box {
+            width: 200px;
+            padding: 4px 8px;
+            border: 1px solid #999;
+            border-radius: 2px;
+            font-size: 12px;
+        }
+
+        .search-box:focus {
+            outline: none;
+            border-color: #0078d4;
+        }
+
+        /* 状态栏 */
+        .status-bar {
+            background: linear-gradient(to bottom, #f0f0f0, #e0e0e0);
+            border-top: 1px solid #c0c0c0;
+            padding: 4px 10px;
+            font-size: 11px;
+            color: #666;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        /* 主内容区 */
+        .main-content {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+
+        .sidebar {
+            width: 200px;
+            background: #f8f8f8;
+            border-right: 1px solid #c0c0c0;
+            padding: 10px;
+        }
+
+        .folder-tree {
+            font-size: 12px;
+        }
+
+        .folder-item {
+            padding: 3px 0;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            border-radius: 2px;
+            padding-left: 4px;
+            padding-right: 4px;
+        }
+
+        .folder-item:hover {
+            background: #e8f4fd;
+        }
+
+        .folder-item.selected {
+            background: #cce8ff;
+            border: 1px solid #0078d4;
+        }
+
+        .folder-item .folder-name {
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .folder-item .file-count {
+            color: #666;
+            font-size: 10px;
+        }
+
+        .folder-icon {
+            width: 16px;
+            height: 16px;
+            text-align: center;
+        }
+
+        /* 文件视图 */
+        .file-view {
+            flex: 1;
+            background: white;
+            overflow: auto;
+            padding: 10px;
+        }
+
+        .view-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 15px;
+            padding: 10px;
+        }
+
+        .file-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 10px;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: background-color 0.2s;
+            user-select: none;
+        }
+
+        .file-item:hover {
+            background: #e8f4fd;
+        }
+
+        .file-item.selected {
+            background: #cce8ff;
+            border: 1px solid #0078d4;
+        }
+
+        .file-icon {
+            width: 64px;
+            height: 64px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f0f0f0;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .file-icon img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: cover;
+        }
+
+        .file-icon .icon-text {
+            font-size: 24px;
+            color: #666;
+        }
+
+        .file-name {
+            font-size: 11px;
+            text-align: center;
+            word-break: break-word;
+            max-width: 100px;
+            line-height: 1.2;
+        }
+
+        .file-size {
+            font-size: 10px;
+            color: #666;
+            margin-top: 2px;
+        }
+
+        /* 列表视图 */
+        .list-view {
+            display: none;
+        }
+
+        .list-view table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+        }
+
+        .list-view th,
+        .list-view td {
+            padding: 4px 8px;
+            text-align: left;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .list-view th {
+            background: #f8f8f8;
+            font-weight: normal;
+            border-bottom: 1px solid #c0c0c0;
+            cursor: pointer;
+        }
+
+        .list-view th:hover {
+            background: #e8e8e8;
+        }
+
+        .list-view tr:hover {
+            background: #e8f4fd;
+        }
+
+        .list-view tr.selected {
+            background: #cce8ff;
+        }
+
+        /* 加载和错误状态 */
+        .loading, .error {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 200px;
+            font-size: 14px;
+            color: #666;
+        }
+
+        .error {
+            color: #d13212;
+        }
+
+        /* 上下文菜单 */
+        .context-menu {
+            position: fixed;
+            background: white;
+            border: 1px solid #999;
+            box-shadow: 2px 2px 8px rgba(0,0,0,0.2);
+            z-index: 1000;
+            min-width: 120px;
+            font-size: 12px;
+        }
+
+        .context-menu-item {
+            padding: 6px 12px;
+            cursor: pointer;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .context-menu-item:hover {
+            background: #e8f4fd;
+        }
+
+        .context-menu-item:last-child {
+            border-bottom: none;
+        }
+
+        /* 详细信息视图切换 */
+        .view-mode-icons {
+            display: flex;
+            gap: 2px;
+        }
+
+        .view-mode-btn {
+            width: 24px;
+            height: 24px;
+            border: 1px solid #999;
+            background: linear-gradient(to bottom, #f8f8f8, #e0e0e0);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+        }
+
+        .view-mode-btn.active {
+            background: linear-gradient(to bottom, #d0d0d0, #b8b8b8);
+        }
+
+        /* 属性对话框 */
+        .properties-dialog {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            border: 1px solid #999;
+            box-shadow: 3px 3px 10px rgba(0,0,0,0.3);
+            z-index: 2000;
+            width: 400px;
+            font-size: 12px;
+        }
+
+        .properties-dialog .title-bar {
+            background: linear-gradient(to bottom, #e8e8e8, #d0d0d0);
+            border-bottom: 1px solid #b8b8b8;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            padding: 0 8px;
+            justify-content: space-between;
+        }
+
+        .properties-dialog .title-bar .title {
+            font-size: 11px;
+            font-weight: normal;
+        }
+
+        .properties-dialog .close-btn {
+            width: 16px;
+            height: 16px;
+            border: 1px solid #999;
+            background: linear-gradient(to bottom, #f8f8f8, #e0e0e0);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+        }
+
+        .properties-dialog .tabs {
+            background: #f0f0f0;
+            border-bottom: 1px solid #c0c0c0;
+            display: flex;
+        }
+
+        .properties-dialog .tab {
+            padding: 6px 16px;
+            border-right: 1px solid #c0c0c0;
+            cursor: pointer;
+            background: #f0f0f0;
+        }
+
+        .properties-dialog .tab.active {
+            background: white;
+            border-bottom: 1px solid white;
+            margin-bottom: -1px;
+        }
+
+        .properties-dialog .content {
+            padding: 16px;
+            height: 300px;
+            overflow-y: auto;
+        }
+
+        .properties-dialog .property-row {
+            display: flex;
+            margin-bottom: 12px;
+            align-items: center;
+        }
+
+        .properties-dialog .property-label {
+            width: 100px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .properties-dialog .property-value {
+            flex: 1;
+            color: #666;
+        }
+
+        .properties-dialog .property-icon {
+            width: 64px;
+            height: 64px;
+            border: 1px solid #ccc;
+            margin-right: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f8f8f8;
+        }
+
+        .properties-dialog .property-icon img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: cover;
+        }
+
+        .properties-dialog .buttons {
+            padding: 12px 16px;
+            border-top: 1px solid #c0c0c0;
+            text-align: right;
+            background: #f0f0f0;
+        }
+
+        .properties-dialog .btn {
+            padding: 6px 16px;
+            margin-left: 8px;
+            border: 1px solid #999;
+            background: linear-gradient(to bottom, #f8f8f8, #e0e0e0);
+            cursor: pointer;
+            font-size: 11px;
+        }
+
+        .properties-dialog .btn:hover {
+            background: linear-gradient(to bottom, #ffffff, #e8e8e8);
+        }
+
+        .modal-backdrop {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.3);
+            z-index: 1500;
+        }
+    </style>
+</head>
+<body>
+    <div class="window">
+        <!-- 标题栏 -->
+        <div class="title-bar">
+            <span class="title">图片资源管理器 - Blog Picture</span>
+            <div class="window-controls">
+                <div class="control-btn">_</div>
+                <div class="control-btn">□</div>
+                <div class="control-btn">✕</div>
+            </div>
+        </div>
+
+        <!-- 工具栏 -->
+        <div class="toolbar">
+            <button class="toolbar-btn">←</button>
+            <button class="toolbar-btn">→</button>
+            <button class="toolbar-btn">↑</button>
+            <input type="text" class="address-bar" value="Blog Picture\list" readonly>
+            
+            <div class="view-mode-icons">
+                <button class="view-mode-btn active" data-view="icons" title="大图标">⊞</button>
+                <button class="view-mode-btn" data-view="list" title="详细信息">☰</button>
+            </div>
+            
+            <input type="text" class="search-box" placeholder="搜索 图片资源管理器" id="searchInput">
+        </div>
+
+        <!-- 主内容区 -->
+        <div class="main-content">
+            <!-- 侧边栏 -->
+            <div class="sidebar">
+                <div class="folder-tree" id="folder-tree">
+                    <!-- 动态生成的文件夹结构 -->
+                </div>
+            </div>
+
+            <!-- 文件视图 -->
+            <div class="file-view">
+                <div id="loading" class="loading">
+                    ⏳ 正在加载文件列表...
+                </div>
+
+                <div id="error" class="error" style="display: none;">
+                    ❌ 无法加载 list.md 文件
+                </div>
+
+                <!-- 图标视图 -->
+                <div id="icon-view" class="view-container" style="display: none;"></div>
+
+                <!-- 列表视图 -->
+                <div id="list-view" class="list-view" style="display: none;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th onclick="sortBy('name')">名称 ↕</th>
+                                <th onclick="sortBy('size')">大小 ↕</th>
+                                <th onclick="sortBy('type')">类型 ↕</th>
+                                <th onclick="sortBy('path')">位置 ↕</th>
+                            </tr>
+                        </thead>
+                        <tbody id="list-view-body"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- 状态栏 -->
+        <div class="status-bar">
+            <span id="status-text">就绪</span>
+            <span id="item-count">0 个项目</span>
+        </div>
+    </div>
+
+    <!-- 上下文菜单 -->
+    <div id="context-menu" class="context-menu" style="display: none;">
+        <div class="context-menu-item" onclick="openFile()">打开</div>
+        <div class="context-menu-item" onclick="downloadFile()">下载</div>
+        <div class="context-menu-item" onclick="copyPath()">复制路径</div>
+        <div class="context-menu-item" onclick="showProperties()">属性</div>
+    </div>
+
+    <script>
+        class WindowsExplorer {
+            constructor() {
+                this.allItems = [];
+                this.filteredItems = [];
+                this.selectedItems = new Set();
+                this.currentView = 'icons';
+                this.currentCategory = 'all';
+                this.sortField = 'name';
+                this.sortDirection = 'asc';
+                this.init();
+            }
+
+            async init() {
+                await this.loadData();
+                this.buildFolderTree();
+                this.setupEventListeners();
+                this.render();
+            }
+
+            async loadData() {
+                try {
+                    const response = await fetch('./list.md');
+                    if (!response.ok) {
+                        throw new Error('Failed to load list.md');
+                    }
+                    
+                    const text = await response.text();
+                    this.parseMarkdownTable(text);
+                    this.hideLoading();
+                } catch (error) {
+                    this.showError();
+                    console.error('Error loading data:', error);
+                }
+            }
+
+            parseMarkdownTable(text) {
+                const lines = text.split('\n');
+                this.allItems = [];
+
+                for (let i = 2; i < lines.length; i++) {
+                    const line = lines[i].trim();
+                    if (!line || !line.startsWith('|')) continue;
+
+                    const columns = line.split('|').map(col => col.trim()).filter(col => col);
+                    if (columns.length >= 3) {
+                        const number = columns[0];
+                        const name = columns[1];
+                        const linkMatch = columns[2].match(/\[.*?\]\((.*?)\)/);
+                        
+                        if (linkMatch) {
+                            const path = linkMatch[1];
+                            const category = this.getCategory(path);
+                            const fileType = this.getFileType(path);
+                            const folderPath = this.getFolderPath(path);
+                            // 初始大小为加载中
+                            const item = {
+                                id: `item-${i}`,
+                                number: parseInt(number) || i - 1,
+                                name,
+                                path,
+                                category,
+                                type: fileType,
+                                size: '加载中...',
+                                fullPath: path.startsWith('./') ? path : './' + path,
+                                folderPath,
+                                dateModified: this.getRandomDate(),
+                                dateCreated: this.getRandomDate()
+                            };
+                            this.allItems.push(item);
+                            // 异步获取真实大小
+                            this.fetchFileSize(item);
+                        }
+                    }
+                }
+
+                this.filteredItems = [...this.allItems];
+                this.updateAddressBar();
+            }
+
+            // 新增方法：异步获取图片真实大小
+            async fetchFileSize(item) {
+                try {
+                    const response = await fetch(item.fullPath, { method: 'HEAD' });
+                    let size = null;
+                    if (response.ok) {
+                        // 优先用 Content-Length
+                        const contentLength = response.headers.get('Content-Length');
+                        if (contentLength) {
+                            size = this.formatSize(parseInt(contentLength));
+                        }
+                    }
+                    // 如果 HEAD 不支持或无 Content-Length，则尝试 fetch blob
+                    if (!size) {
+                        const resp = await fetch(item.fullPath);
+                        if (resp.ok) {
+                            const blob = await resp.blob();
+                            size = this.formatSize(blob.size);
+                        }
+                    }
+                    if (size) {
+                        item.size = size;
+                    } else {
+                        item.size = '未知';
+                    }
+                } catch (e) {
+                    item.size = '未知';
+                }
+                // 更新界面
+                this.render();
+            }
+
+            // 格式化字节为 KB/MB
+            formatSize(bytes) {
+                if (bytes < 1024) return bytes + ' B';
+                if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+                return (bytes / 1024 / 1024).toFixed(2) + ' MB';
+            }
+
+            getCategory(path) {
+                if (path.includes('/background/') || path.includes('background/')) return 'background';
+                if (path.includes('/link/') || path.includes('link/')) return 'link';
+                if (path.includes('/logo/') || path.includes('logo/')) return 'logo';
+                if (path.includes('/mc/') || path.includes('mc/')) return 'mc';
+                if (path.includes('/twikoo/') || path.includes('twikoo/')) return 'twikoo';
+                
+                // 检查是否为子文件夹
+                if (path.includes('/')) {
+                    const folderName = path.split('/').filter(p => p)[0];
+                    return folderName;
+                }
+                
+                return 'general';
+            }
+
+            getFileType(path) {
+                const ext = path.split('.').pop().toLowerCase();
+                return ext === 'webp' ? 'WebP 图像' : '图片文件';
+            }
+
+            getRandomSize() {
+                // 已废弃，保留兼容
+                return '加载中...';
+            }
+
+            getFolderPath(path) {
+                const parts = path.split('/');
+                if (parts.length > 1) {
+                    return parts.slice(0, -1).join('/').replace('./', '');
+                }
+                return '';
+            }
+
+            getRandomDate() {
+                const start = new Date(2024, 0, 1);
+                const end = new Date();
+                const randomTime = start.getTime() + Math.random() * (end.getTime() - start.getTime());
+                return new Date(randomTime).toLocaleString('zh-CN');
+            }
+
+            updateAddressBar() {
+                const addressBar = document.querySelector('.address-bar');
+                if (this.currentCategory === 'all') {
+                    addressBar.value = 'Blog Picture\\list';
+                } else if (this.currentCategory === 'general') {
+                    addressBar.value = 'Blog Picture\\list';
+                } else {
+                    addressBar.value = `Blog Picture\\list\\${this.currentCategory}`;
+                }
+            }
+
+            buildFolderTree() {
+                // 收集所有文件夹路径
+                const folderMap = new Map();
+                
+                // 添加根目录
+                folderMap.set('', {
+                    path: '',
+                    name: '根目录',
+                    category: 'general',
+                    count: 0,
+                    isRoot: true
+                });
+
+                // 分析文件路径，构建文件夹结构
+                this.allItems.forEach(item => {
+                    if (item.folderPath) {
+                        const parts = item.folderPath.split('/').filter(part => part);
+                        let currentPath = '';
+                        
+                        parts.forEach((part, index) => {
+                            const parentPath = currentPath;
+                            currentPath = currentPath ? `${currentPath}/${part}` : part;
+                            
+                            if (!folderMap.has(currentPath)) {
+                                folderMap.set(currentPath, {
+                                    path: currentPath,
+                                    name: part,
+                                    category: this.getCategory(`./${currentPath}/`),
+                                    count: 0,
+                                    parentPath: parentPath,
+                                    level: index
+                                });
+                            }
+                        });
+                    }
+                });
+
+                // 统计文件数量
+                this.allItems.forEach(item => {
+                    if (item.folderPath && folderMap.has(item.folderPath)) {
+                        folderMap.get(item.folderPath).count++;
+                    } else {
+                        folderMap.get('').count++;
+                    }
+                });
+
+                // 生成侧边栏HTML
+                this.renderFolderTree(folderMap);
+            }
+
+            renderFolderTree(folderMap) {
+                const folderTree = document.getElementById('folder-tree');
+                folderTree.innerHTML = '';
+                
+                // 先添加"全部图片"选项
+                const allItem = document.createElement('div');
+                allItem.className = 'folder-item selected';
+                allItem.dataset.path = '';
+                allItem.innerHTML = `
+                    <span class="folder-icon">📁</span>
+                    <span class="folder-name">全部图片</span>
+                    <span class="file-count">(${this.allItems.length})</span>
+                `;
+                folderTree.appendChild(allItem);
+
+                // 按层级和字母顺序排序文件夹
+                const sortedFolders = Array.from(folderMap.values())
+                    .filter(folder => !folder.isRoot) // 排除根目录，它会单独处理
+                    .sort((a, b) => {
+                        // 按层级排序
+                        if (a.level !== b.level) {
+                            return (a.level || 0) - (b.level || 0);
+                        }
+                        
+                        // 同层级按名称排序
+                        return a.name.localeCompare(b.name);
+                    });
+
+                // 添加根目录文件
+                const rootFolder = folderMap.get('');
+                if (rootFolder && rootFolder.count > 0) {
+                    const rootItem = document.createElement('div');
+                    rootItem.className = 'folder-item';
+                    rootItem.dataset.path = '';
+                    rootItem.dataset.category = 'general';
+                    rootItem.innerHTML = `
+                        <span class="folder-icon">📄</span>
+                        <span class="folder-name">根目录</span>
+                        <span class="file-count">(${rootFolder.count})</span>
+                    `;
+                    folderTree.appendChild(rootItem);
+                }
+
+                // 添加其他文件夹
+                sortedFolders.forEach(folder => {
+                    if (folder.count > 0) { // 只显示有文件的文件夹
+                        const folderItem = document.createElement('div');
+                        folderItem.className = 'folder-item';
+                        folderItem.dataset.path = folder.path;
+                        folderItem.dataset.category = folder.category;
+                        
+                        // 根据层级添加缩进
+                        const indent = '　'.repeat(folder.level || 0); // 使用全角空格缩进
+                        
+                        folderItem.innerHTML = `
+                            <span class="folder-icon">📁</span>
+                            <span class="folder-name">${indent}${folder.name}</span>
+                            <span class="file-count">(${folder.count})</span>
+                        `;
+                        
+                        folderTree.appendChild(folderItem);
+                    }
+                });
+
+                // 重新绑定事件监听器
+                this.bindFolderEvents();
+            }
+
+            bindFolderEvents() {
+                // 分类筛选事件
+                document.querySelectorAll('.folder-item[data-category]').forEach(item => {
+                    item.addEventListener('click', (e) => {
+                        this.filterByCategory(e.currentTarget.dataset.category);
+                        this.updateSelectedFolder(e.currentTarget);
+                    });
+                });
+
+                // 全部图片事件
+                document.querySelector('.folder-item:not([data-category])').addEventListener('click', (e) => {
+                    this.filterByCategory('all');
+                    this.updateSelectedFolder(e.currentTarget);
+                });
+            }
+
+            updateSelectedFolder(selectedElement) {
+                document.querySelectorAll('.folder-item').forEach(f => f.classList.remove('selected'));
+                selectedElement.classList.add('selected');
+            }
+
+            setupEventListeners() {
+                // 搜索
+                const searchInput = document.getElementById('searchInput');
+                searchInput.addEventListener('input', (e) => {
+                    this.filterItems(e.target.value);
+                });
+
+                // 视图切换
+                document.querySelectorAll('.view-mode-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        this.switchView(e.target.dataset.view);
+                    });
+                });
+
+                // 右键菜单
+                document.addEventListener('contextmenu', (e) => {
+                    e.preventDefault();
+                    const target = e.target.closest('.file-item, tr[data-id]');
+                    if (target) {
+                        const itemId = target.dataset.id;
+                        selectedItemForAction = this.allItems.find(item => item.id === itemId);
+                    }
+                    this.showContextMenu(e.clientX, e.clientY);
+                });
+
+                document.addEventListener('click', () => {
+                    this.hideContextMenu();
+                });
+            }
+
+            filterItems(searchTerm) {
+                const term = searchTerm.toLowerCase();
+                let filtered = this.allItems.filter(item => 
+                    item.name.toLowerCase().includes(term) || 
+                    item.path.toLowerCase().includes(term)
+                );
+
+                if (this.currentCategory !== 'all') {
+                    filtered = filtered.filter(item => item.category === this.currentCategory);
+                }
+
+                this.filteredItems = filtered;
+                this.render();
+                this.updateStatus();
+            }
+
+            filterByCategory(category) {
+                this.currentCategory = category;
+                const searchTerm = document.getElementById('searchInput').value;
+                this.filterItems(searchTerm);
+                this.updateAddressBar();
+            }
+
+            switchView(viewType) {
+                this.currentView = viewType;
+                document.querySelectorAll('.view-mode-btn').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+                document.querySelector(`[data-view="${viewType}"]`).classList.add('active');
+                this.render();
+            }
+
+            render() {
+                const iconView = document.getElementById('icon-view');
+                const listView = document.getElementById('list-view');
+
+                if (this.currentView === 'icons') {
+                    iconView.style.display = 'grid';
+                    listView.style.display = 'none';
+                    this.renderIconView();
+                } else {
+                    iconView.style.display = 'none';
+                    listView.style.display = 'block';
+                    this.renderListView();
+                }
+
+                this.updateStatus();
+            }
+
+            renderIconView() {
+                const container = document.getElementById('icon-view');
+                container.innerHTML = '';
+
+                this.filteredItems.forEach(item => {
+                    const fileItem = document.createElement('div');
+                    fileItem.className = 'file-item';
+                    fileItem.dataset.id = item.id;
+                    
+                    fileItem.innerHTML = `
+                        <div class="file-icon">
+                            <img src="${item.fullPath}" alt="${item.name}" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                            <div class="icon-text" style="display: none;">🖼️</div>
+                        </div>
+                        <div class="file-name">${item.name}</div>
+                        <div class="file-size">${item.size}</div>
+                    `;
+
+                    fileItem.addEventListener('click', (e) => {
+                        this.selectItem(item.id, e.ctrlKey);
+                    });
+
+                    fileItem.addEventListener('dblclick', () => {
+                        this.openFile(item);
+                    });
+
+                    container.appendChild(fileItem);
+                });
+            }
+
+            renderListView() {
+                const tbody = document.getElementById('list-view-body');
+                tbody.innerHTML = '';
+
+                this.filteredItems.forEach(item => {
+                    const row = document.createElement('tr');
+                    row.dataset.id = item.id;
+                    
+                    row.innerHTML = `
+                        <td>🖼️ ${item.name}</td>
+                        <td>${item.size}</td>
+                        <td>${item.type}</td>
+                        <td>${item.path}</td>
+                    `;
+
+                    row.addEventListener('click', (e) => {
+                        this.selectItem(item.id, e.ctrlKey);
+                    });
+
+                    row.addEventListener('dblclick', () => {
+                        this.openFile(item);
+                    });
+
+                    tbody.appendChild(row);
+                });
+            }
+
+            selectItem(itemId, multiSelect = false) {
+                if (!multiSelect) {
+                    this.selectedItems.clear();
+                    document.querySelectorAll('.file-item, tr').forEach(el => {
+                        el.classList.remove('selected');
+                    });
+                }
+
+                if (this.selectedItems.has(itemId)) {
+                    this.selectedItems.delete(itemId);
+                    document.querySelector(`[data-id="${itemId}"]`).classList.remove('selected');
+                } else {
+                    this.selectedItems.add(itemId);
+                    document.querySelector(`[data-id="${itemId}"]`).classList.add('selected');
+                }
+
+                this.updateStatus();
+            }
+
+            openFile(item) {
+                // 创建预览窗口
+                this.previewImage(item.fullPath, item.name);
+            }
+
+            previewImage(path, name) {
+                const modal = document.createElement('div');
+                modal.style.cssText = `
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background: rgba(0,0,0,0.9);
+                    z-index: 2000;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    flex-direction: column;
+                    padding: 20px;
+                `;
+
+                modal.innerHTML = `
+                    <div style="color: white; margin-bottom: 20px; text-align: center;">
+                        <h3>${name}</h3>
+                        <p style="opacity: 0.8; font-size: 12px;">${path}</p>
+                    </div>
+                    <img src="${path}" style="max-width: 90%; max-height: 80%; object-fit: contain; border: 2px solid #ccc;">
+                    <div style="margin-top: 20px; display: flex; gap: 10px;">
+                        <button onclick="window.open('${path}', '_blank')" style="padding: 8px 16px; background: #0078d4; color: white; border: none; border-radius: 4px; cursor: pointer;">下载</button>
+                        <button onclick="this.parentElement.parentElement.remove()" style="padding: 8px 16px; background: #666; color: white; border: none; border-radius: 4px; cursor: pointer;">关闭</button>
+                    </div>
+                `;
+
+                modal.addEventListener('click', (e) => {
+                    if (e.target === modal) {
+                        modal.remove();
+                    }
+                });
+
+                document.body.appendChild(modal);
+            }
+
+            showContextMenu(x, y) {
+                const menu = document.getElementById('context-menu');
+                menu.style.display = 'block';
+                menu.style.left = x + 'px';
+                menu.style.top = y + 'px';
+            }
+
+            hideContextMenu() {
+                document.getElementById('context-menu').style.display = 'none';
+            }
+
+            updateStatus() {
+                const selectedCount = this.selectedItems.size;
+                const totalCount = this.filteredItems.length;
+                
+                document.getElementById('status-text').textContent = 
+                    selectedCount > 0 ? `已选择 ${selectedCount} 个项目` : '就绪';
+                
+                document.getElementById('item-count').textContent = `${totalCount} 个项目`;
+            }
+
+            hideLoading() {
+                document.getElementById('loading').style.display = 'none';
+            }
+
+            showError() {
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('error').style.display = 'flex';
+            }
+
+            sortBy(field) {
+                if (this.sortField === field) {
+                    this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
+                } else {
+                    this.sortField = field;
+                    this.sortDirection = 'asc';
+                }
+
+                this.filteredItems.sort((a, b) => {
+                    let aVal = a[field];
+                    let bVal = b[field];
+
+                    if (field === 'size') {
+                        aVal = parseInt(aVal);
+                        bVal = parseInt(bVal);
+                    }
+
+                    if (aVal < bVal) return this.sortDirection === 'asc' ? -1 : 1;
+                    if (aVal > bVal) return this.sortDirection === 'asc' ? 1 : -1;
+                    return 0;
+                });
+
+                this.render();
+            }
+
+            showProperties(item) {
+                // 创建模态背景
+                const backdrop = document.createElement('div');
+                backdrop.className = 'modal-backdrop';
+                
+                // 创建属性对话框
+                const dialog = document.createElement('div');
+                dialog.className = 'properties-dialog';
+                
+                dialog.innerHTML = `
+                    <div class="title-bar">
+                        <span class="title">${item.name} 属性</span>
+                        <div class="close-btn" onclick="this.parentElement.parentElement.parentElement.remove()">✕</div>
+                    </div>
+                    <div class="tabs">
+                        <div class="tab active" data-tab="general">常规</div>
+                        <div class="tab" data-tab="details">详细信息</div>
+                    </div>
+                    <div class="content">
+                        <div class="tab-content" id="general-tab">
+                            <div style="display: flex; align-items: flex-start; margin-bottom: 16px;">
+                                <div class="property-icon">
+                                    <img src="${item.fullPath}" alt="${item.name}" onerror="this.style.display='none'; this.parentElement.innerHTML='🖼️';">
+                                </div>
+                                <div style="flex: 1;">
+                                    <div class="property-row">
+                                        <div class="property-label">名称:</div>
+                                        <div class="property-value">${item.name}</div>
+                                    </div>
+                                    <div class="property-row">
+                                        <div class="property-label">类型:</div>
+                                        <div class="property-value">${item.type}</div>
+                                    </div>
+                                    <div class="property-row">
+                                        <div class="property-label">位置:</div>
+                                        <div class="property-value">${item.folderPath || '根目录'}</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <hr style="margin: 16px 0; border: none; border-top: 1px solid #e0e0e0;">
+                            <div class="property-row">
+                                <div class="property-label">大小:</div>
+                                <div class="property-value">${item.size}</div>
+                            </div>
+                            <div class="property-row">
+                                <div class="property-label">创建时间:</div>
+                                <div class="property-value">${item.dateCreated}</div>
+                            </div>
+                            <div class="property-row">
+                                <div class="property-label">修改时间:</div>
+                                <div class="property-value">${item.dateModified}</div>
+                            </div>
+                            <div class="property-row">
+                                <div class="property-label">完整路径:</div>
+                                <div class="property-value" style="word-break: break-all;">${item.path}</div>
+                            </div>
+                        </div>
+                        <div class="tab-content" id="details-tab" style="display: none;">
+                            <div class="property-row">
+                                <div class="property-label">文件名:</div>
+                                <div class="property-value">${item.name}</div>
+                            </div>
+                            <div class="property-row">
+                                <div class="property-label">文件夹:</div>
+                                <div class="property-value">${item.folderPath || '根目录'}</div>
+                            </div>
+                            <div class="property-row">
+                                <div class="property-label">文件大小:</div>
+                                <div class="property-value">${item.size}</div>
+                            </div>
+                            <div class="property-row">
+                                <div class="property-label">文件类型:</div>
+                                <div class="property-value">${item.type}</div>
+                            </div>
+                            <div class="property-row">
+                                <div class="property-label">编号:</div>
+                                <div class="property-value">#${item.number}</div>
+                            </div>
+                            <div class="property-row">
+                                <div class="property-label">类别:</div>
+                                <div class="property-value">${this.getCategoryDisplayName(item.category)}</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="buttons">
+                        <button class="btn" onclick="this.parentElement.parentElement.parentElement.remove()">确定</button>
+                        <button class="btn" onclick="this.parentElement.parentElement.parentElement.remove()">取消</button>
+                    </div>
+                `;
+
+                // 设置标签页切换
+                dialog.querySelectorAll('.tab').forEach(tab => {
+                    tab.addEventListener('click', (e) => {
+                        dialog.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                        dialog.querySelectorAll('.tab-content').forEach(tc => tc.style.display = 'none');
+                        
+                        e.target.classList.add('active');
+                        dialog.querySelector(`#${e.target.dataset.tab}-tab`).style.display = 'block';
+                    });
+                });
+
+                backdrop.appendChild(dialog);
+                document.body.appendChild(backdrop);
+
+                // 点击背景关闭
+                backdrop.addEventListener('click', (e) => {
+                    if (e.target === backdrop) {
+                        backdrop.remove();
+                    }
+                });
+            }
+
+            getCategoryDisplayName(category) {
+                const names = {
+                    'background': '背景图片',
+                    'link': '链接图标',
+                    'logo': '标志图片',
+                    'mc': 'Minecraft相关',
+                    'twikoo': 'Twikoo组件',
+                    'general': '通用图片'
+                };
+                return names[category] || category;
+            }
+        }
+
+        // 全局函数
+        let currentExplorer = null;
+        let selectedItemForAction = null;
+
+        function sortBy(field) {
+            if (currentExplorer) {
+                currentExplorer.sortBy(field);
+            }
+        }
+
+        function openFile() {
+            if (selectedItemForAction && currentExplorer) {
+                currentExplorer.openFile(selectedItemForAction);
+            }
+        }
+
+        function downloadFile() {
+            if (selectedItemForAction) {
+                const link = document.createElement('a');
+                link.href = selectedItemForAction.fullPath;
+                link.download = selectedItemForAction.name;
+                link.click();
+            }
+        }
+
+        function copyPath() {
+            if (selectedItemForAction) {
+                // 智能拼接图片绝对 URL，兼容各种页面路径和部署场景
+                const url = new URL(selectedItemForAction.path, window.location.href).href;
+                navigator.clipboard.writeText(url).then(() => {
+                    // 简单的提示
+                    const statusText = document.getElementById('status-text');
+                    const originalText = statusText.textContent;
+                    statusText.textContent = '完整链接已复制到剪贴板';
+                    setTimeout(() => {
+                        statusText.textContent = originalText;
+                    }, 2000);
+                });
+            }
+        }
+
+        function showProperties() {
+            if (selectedItemForAction && currentExplorer) {
+                currentExplorer.showProperties(selectedItemForAction);
+            }
+        }
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            currentExplorer = new WindowsExplorer();
+        });
+    </script>
+</body>
+</html>
