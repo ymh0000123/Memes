@@ -1,14 +1,14 @@
 {
     "小废鼠": {
         "type": "image",
-        "content":[
+        "container": [
             {
                 "text": "drool",
-                "icon":"<img src='https://memes.xiao-feishu.top/list/drool.webp'>"
+                "icon": "<img src='https://memes.xiao-feishu.top/list/drool.webp'>"
             },
             {
                 "text": "give_money",
-                "icon":"<img src='https://memes.xiao-feishu.top/list/give_money.webp'>"
+                "icon": "<img src='https://memes.xiao-feishu.top/list/give_money.webp'>"
             }
         ]
     }
